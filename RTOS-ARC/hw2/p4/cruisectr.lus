@@ -1,0 +1,112 @@
+-- Helper: convert wheel rotation to natural speed
+node measureSpeed(event_rotate: real) returns (nat_speed: real);
+let
+    nat_speed = event_rotate * (10.0 * 60.0 / 672.0);
+tel
+
+-- Helper: update cruise latch and target speed
+node setSpeed(
+    cruise_toggle: bool;
+    event_increment: bool;
+    event_decrement: bool;
+    nat_speed: real;
+    prev_state: bool
+) returns (event_cruise: bool; cruise_speed: real);
+let
+    -- Cruise latch is toggled on demand
+    event_cruise =
+        false ->
+        if cruise_toggle then not pre(prev_state)
+        else pre(prev_state);
+
+    -- Cruise target initializes when entering cruise
+    cruise_speed =
+        0.0 ->
+        if event_cruise and not pre(prev_state) then nat_speed
+        else if event_cruise and event_increment then pre(cruise_speed) + 1.0
+        else if event_cruise and event_decrement then pre(cruise_speed) - 1.0
+        else pre(cruise_speed);
+tel
+
+-- Helper: compute pressure force based on tracking error
+node controlSpeed(nat_speed: real; cruise_speed: real) returns (pressure_force: real);
+var
+    error: real;
+    abs_error: real;
+    abs_pressure_force: real;
+    prev_pressure: real;
+let
+    -- Persist last force for feedback shaping
+    prev_pressure = 0.0 -> pre(pressure_force);
+
+    -- Tracking error drives force updates
+    error = cruise_speed - nat_speed;
+
+    -- Absolute values avoid sign-sensitive thresholds
+    abs_error = if error < 0.0 then -error else error;
+    abs_pressure_force = if prev_pressure < 0.0 then -prev_pressure else prev_pressure;
+
+    -- Force adjustment is piecewise based on magnitude
+    pressure_force =
+        0.0 ->
+        if abs_pressure_force > abs_error and abs_error > 0.5 then prev_pressure + 0.25
+        else if prev_pressure < 0.1 then 0.0
+        else prev_pressure - 0.2;
+tel
+
+-- Helper: integrate pressure into rotation only while cruising
+node changeSpeed(prev_rotation: real; prev_force: real; cruise_state: bool) returns (event_rotate: real);
+let
+    -- Rotation evolves only when cruise is active
+    event_rotate = if cruise_state then prev_rotation + prev_force else prev_rotation;
+tel
+
+-- Cruise Controller node
+node cruisectr(
+    event_rotate: real;
+    event_cruise: bool;
+    event_decrement: real;
+    event_increment: real
+)
+returns (
+    nat_speed: real;
+    cruise_speed: real;
+    pressure_force: real;
+    cruise_output: bool
+);
+var
+    prev_rotation: real;
+    prev_force: real;
+    updated_rotation: real;
+    updated_pressure: real;
+    cruise_output_local: bool;
+    cruise_speed_local: real;
+let
+    -- Natural speed comes directly from the current input rotation
+    nat_speed = measureSpeed(event_rotate);
+
+    -- State memories feed rotation integration
+    prev_rotation = 0.0 -> pre(updated_rotation);
+    prev_force    = 0.0 -> pre(updated_pressure);
+
+    -- Cruise latch and target update from discrete increment/decrement events
+    (cruise_output_local, cruise_speed_local) =
+        setSpeed(event_cruise,
+                 event_increment <> 0.0,
+                 event_decrement <> 0.0,
+                 nat_speed,
+                 false -> pre(cruise_output_local));
+
+    -- Expose cruise outputs
+    cruise_output = cruise_output_local;
+    cruise_speed  = cruise_speed_local;
+
+    -- Pressure is computed from tracking error (kept separate to avoid cycles)
+    updated_pressure = controlSpeed(nat_speed, cruise_speed);
+
+    -- Rotation update applies only when cruise is engaged
+    updated_rotation = changeSpeed(prev_rotation, prev_force, event_cruise);
+
+    -- Expose the actuator output
+    pressure_force = updated_pressure;
+tel

@@ -1,0 +1,39 @@
+-- switch.lus
+-- Switch state automaton:
+--   Input:  press : bool
+--   State:  mode  : bool  (false=off, true=on)
+--           x     : int   (counter, intended range 0..10)
+--
+-- Behavior:
+--   * Initial state: mode=off, x=0
+--   * If mode=off:
+--       - press=0 -> stay off, x=0
+--       - press=1 -> go on,  x=0
+--   * If mode=on:
+--       - press=0 and x<10 -> stay on, x := x+1
+--       - press=1 OR x>=10 -> go off, x := 0
+
+node switch(press: bool) returns (mode: bool; x: int);
+var
+  mode_prev: bool;
+  x_prev: int;
+let
+  -- previous-state values (initialized)
+  mode_prev = false -> pre(mode);
+  x_prev    = 0     -> pre(x);
+
+  -- next mode depends on previous mode and input/counter
+  mode =
+    if not mode_prev then
+      -- press=1, turns on
+      (if press then true else false)
+    else
+      (if press or (x_prev >= 10) then false else true);
+
+  -- counter updates based on the *new* mode
+  x =
+    if mode then
+      (if (not mode_prev and x_prev < 10) then 0 else x_prev + 1)
+    else
+      0;
+tel

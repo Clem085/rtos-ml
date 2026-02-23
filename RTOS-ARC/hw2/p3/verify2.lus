@@ -1,0 +1,34 @@
+-- verify2.lus
+-- Property: Either the light is on, or x is zero.
+--   mode OR (x = 0)
+
+node switch(press: bool) returns (mode: bool; x: int);
+var
+  mode_prev: bool;
+  x_prev: int;
+let
+  mode_prev = false -> pre(mode);
+  x_prev    = 0     -> pre(x);
+
+  mode =
+    if not mode_prev then
+      (if press then true else false)
+    else
+      (if press or (x_prev >= 10) then false else true);
+
+  x =
+    if mode then
+      (if not mode_prev then 0 else x_prev + 1)
+    else
+      0;
+tel
+
+node verify2(press: bool) returns (ok: bool);
+var
+  mode: bool;
+  x: int;
+let
+  (mode, x) = switch(press);
+
+  ok = mode or (x = 0);
+tel

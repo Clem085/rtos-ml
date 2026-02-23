@@ -1,0 +1,19 @@
+node switch
+  (press: bool)
+returns
+  (mode: bool;
+  x: int);
+
+var
+  V5_mode_prev: bool;
+  V6_x_prev: int;
+
+let
+  mode = (if (not V5_mode_prev) then (if press then true else false) else (if (
+  press or (V6_x_prev >= 10)) then false else true));
+  x = (if mode then (if (not V5_mode_prev) then 0 else (V6_x_prev + 1)) else 0)
+  ;
+  V5_mode_prev = (false -> (pre mode));
+  V6_x_prev = (0 -> (pre x));
+tel
+
