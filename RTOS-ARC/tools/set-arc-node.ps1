@@ -1,11 +1,23 @@
 # To Run File from CMD:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS ML\RTOS-ARC\set-arc-node.ps1"
-
-# To exit cluster node: 
+#   powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS_ML\RTOS-ARC\tools\set-arc-node.ps1"
+#
+# Usage:
+#   # Default: request any ARC node (no partition constraint)
+#   powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS_ML\RTOS-ARC\tools\set-arc-node.ps1"
+#
+#   # RTOS: request from csc549 partition (class)
+#   powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS_ML\RTOS-ARC\tools\set-arc-node.ps1" -Rtos
+#
+# To exit cluster node:
 #   ssh arc "scancel -u $USER"
-
+#
 # Auto-select ARC compute node and update ssh config
 # Assumes clusters are c0–c99
+
+param(
+    # If provided, request an allocation suitable for the RTOS class (partition csc549).
+    [switch]$Rtos
+)
 
 # --- inputs ---
 $SshDir  = "$env:USERPROFILE\.ssh"                 # ssh directory
@@ -106,11 +118,23 @@ function Write-Config([string]$path, [string]$text, [string]$reason) {
     Info "Wrote config file ($reason): $path"
 }
 
+# --------------------------------------------------------------------
+# Slurm request mode (default: any node; -Rtos: csc549)
+# --------------------------------------------------------------------
+$allocCmd = "salloc --no-shell sleep 5"
+$allocDesc = "ANY partition"
+
+if ($Rtos) {
+    $allocCmd = "salloc -p csc549 --no-shell sleep 5"
+    $allocDesc = "RTOS (partition csc549)"
+}
+
 Step "Starting set-arc-node"
 Info "UnityId     = $UnityId"
 Info "KeyPath     = $KeyPath"
 Info "Config file = $cfg"
 Info "ssh.exe     = $ssh"
+Info "Mode        = $allocDesc"
 
 if (-not (Test-Path $KeyPath)) { Fail "Key file not found: $KeyPath"; exit 1 }
 if (-not (Test-Path $cfg)) { Fail "SSH config not found: $cfg"; Fail "Create the file (even empty) and re-run."; exit 1 }
@@ -192,10 +216,10 @@ if ($node) { $node = $node.Trim() }
 if ($LASTEXITCODE -ne 0) { Warn "ssh exit code $LASTEXITCODE. Output may be empty." }
 
 if ([string]::IsNullOrWhiteSpace($node)) {
-    Step "No allocation found. Request allocation (ssh arc -> salloc) and re-check"
-    Info "Running: ssh -i `"$KeyPath`" arc 'salloc -p csc549 --no-shell sleep 5'"
+    Step "No allocation found. Request allocation ($allocDesc) (ssh arc -> $allocCmd) and re-check"
+    Info "Running: ssh -i `"$KeyPath`" arc '$allocCmd'"
 
-    & $ssh -i $KeyPath arc "salloc -p csc549 --no-shell sleep 5" | Out-Null
+    & $ssh -i $KeyPath arc $allocCmd | Out-Null
     Start-Sleep 3
 
     Info "Running: ssh -i `"$KeyPath`" arc 'squeue -u $UnityId -h -o %N | head -n 1'"
@@ -245,4 +269,3 @@ Info "arc block $($arcFinal.Action):"
 
 Step "Done"
 Info "Updated ssh config: arc-node -> $node"
-
