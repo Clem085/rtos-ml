@@ -58,7 +58,7 @@ ln -s /usr/lib/libgmp.so.10 libgmp.so.3
 ---
 
 ## 4. Configure Environment (Each Session)
-Must be ran **EVERY** session. If looking for a permanent solution that doesn't have to be re-ran after initial setup, please follow the optional **.bashrc** instructions below. 
+
 ```bash
 export LV6_PATH="/home/<unityid>/<path>/lv6-bin-dist/"
 . "/home/<unityid>/<path>/v6-tools.sh"
@@ -66,8 +66,8 @@ export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/<unityid>/<path>"
 export PATH=$PATH:/home/cbsavugo/RTOS-ARC/tools/lustre
 ```
 
-### Recommended — Add to `.bashrc`
-If added to **.bashrc**, this will run every time on system intiilization, providing a permanent solution that you don't have to think about!
+### Optional — Add to `.bashrc`
+
 ```bash
 echo '
 # ===== RTOS_ML / LV6 Toolchain Setup =====
@@ -76,8 +76,6 @@ export LV6_PATH="/home/cbsavugo/RTOS-ARC/tools/lustre/lv6-bin-dist/"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/home/cbsavugo/RTOS-ARC/tools/lustre"
 export PATH="$PATH:/home/cbsavugo/RTOS-ARC/tools/lustre"
 ' >> /home/cbsavugo/.bashrc
-
-source /home/cbsavugo/.bashrc # Allows .bashrc changes to take effect
 ```
 
 ---

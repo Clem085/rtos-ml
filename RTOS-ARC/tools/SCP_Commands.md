@@ -18,7 +18,7 @@ scp -r "<Windows-Folder-Path>" <unityID>@arc-node:/home/<unityID>/
 ### Example
 
 ```bash
-scp -r "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS ML\RTOS-ARC" cbsavugo@arc-node:/home/cbsavugo/
+scp -r "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS_ML\RTOS-ARC" cbsavugo@arc-node:/home/cbsavugo/
 ```
 
 Result: The folder is uploaded to your ARC home directory.
@@ -38,7 +38,7 @@ scp -r <unityID>@arc-node:/home/<unityID>/<folder> "<Windows-Destination-Folder>
 ### Example
 
 ```bash
-scp -r cbsavugo@arc-node:/home/cbsavugo/RTOS-ARC "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS ML"
+scp -r cbsavugo@arc-node:/home/cbsavugo/RTOS-ARC "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS_ML"
 ```
 
 Result: The folder is downloaded to your Windows directory.

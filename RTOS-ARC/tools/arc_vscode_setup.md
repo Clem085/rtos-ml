@@ -6,12 +6,14 @@ Add the following to the top of your ssh config file, typically located in `~/.s
 Don't worry about this info being inaccurate, the script will fill it in with your details, but we need the template there first. 
 ```bash
 # --- ARC Computer Cluster ---
-# powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS ML\RTOS-ARC\set-arc-node.ps1"
+# powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS_ML\RTOS-ARC\set-arc-node.ps1"
 
 # ssh arc "squeue -u $USER -h -o %N | head -n 1" # SSH Into arc, request cluster, and print cluster number
 # ssh arc "scancel -u $USER" # Exit Cluster and disconnect from SSH
-# 
+# sinfo # Check node availability and partition info
+# squeue # Shows who is holding what nodes and for how long
 # --- --- --- --- --- --- ---
+
 Host arc-node
   HostName c61
   User cbsavugo
@@ -43,7 +45,7 @@ Run powershell script within command prompt
 powershell -NoProfile -ExecutionPolicy Bypass -File <Path-to-Powershell-Script>
 
 # Example
-powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS ML\RTOS-ARC\set-arc-node.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "C:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS_ML\RTOS-ARC\set-arc-node.ps1"
 ```
 
 ## Step 4.
@@ -51,7 +53,7 @@ Open a new Window in VS Code and install the `Remote - SSH` extension by Microso
 ![Remote-SSH-Extension](./images/Remote-SSH-Extension.png)
 
 ## Step 5.
-Restart VS Code when prompted after installing the exenstion to enable to extension
+Restart VS Code when prompted after installing the extension to enable to extension
 
 ## Step 6.
 **6.1** Click the purple arrows icon `><` in the bottom left
