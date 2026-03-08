@@ -1,0 +1,119 @@
+-- Switch automaton from HW2, with additional state tracking for verification
+node switch(press: bool) returns (mode: bool; x: int);
+var
+  mode_prev: bool;  -- stores the previous value of mode (light state)
+  x_prev: int;      -- stores the previous value of the counter
+let
+  -- initialize previous state variables
+  -- first tick: mode_prev = false, afterwards it tracks pre(mode)
+  mode_prev = false -> pre(mode);
+
+  -- first tick: x_prev = 0, afterwards it tracks pre(x)
+  x_prev    = 0     -> pre(x);
+
+  -- determine whether the light is ON or OFF this tick
+  mode =
+    if not mode_prev then
+      -- if the light was previously OFF
+      -- it turns ON only if the button is pressed
+      (if press then true else false)
+    else
+      -- if the light was previously ON
+      -- it turns OFF if the button is pressed again
+      -- or if the counter has reached the cutoff (>=10)
+      (if press or (x_prev >= 10) then false else true);
+
+  -- update the counter
+  x =
+    if mode then
+      -- when the light is ON:
+      -- if this is the moment it just turned ON, start at 0
+      -- otherwise increment the previous counter value
+      (if not mode_prev then 0 else x_prev + 1)
+    else
+      -- when the light is OFF the counter resets to 0
+      0;
+tel
+
+
+
+-- Verification node for the switch automaton
+node verify4(press: bool) returns
+(
+  ok: bool;   -- overall property: all checks must hold
+  ok1: bool;  -- property 1 monitor
+  ok2: bool;  -- property 2 monitor
+  ok3: bool;  -- property 3 monitor
+  ok4: bool   -- custom invariant property
+);
+var
+  mode: bool; -- light state from switch node
+  x: int;     -- counter value from switch node
+
+  two_on: bool;     -- true when light has been ON for two consecutive ticks
+  seen_x_pos: bool; -- remembers whether x has ever been positive
+
+  wait1: bool;      -- active only if ok1 has been triggered but not yet satisfied
+  wait3: bool;      -- active only if ok3 has been triggered but not yet satisfied
+let
+  -- run the switch automaton
+  (mode, x) = switch(press);
+
+  ----------------------------------------------------------------
+  -- Helper conditions
+  ----------------------------------------------------------------
+
+  -- detect two consecutive ON ticks
+  two_on = false -> (mode and pre(mode));
+
+  -- latch that remembers if x has ever been positive
+  seen_x_pos = false -> (pre(seen_x_pos) or (x > 0));
+
+  ----------------------------------------------------------------
+  -- ok1: After two consecutive ON ticks, x becomes positive at some point
+  ----------------------------------------------------------------
+
+  -- only enter waiting state if the trigger happens and x is not already positive
+  -- remain waiting until x > 0 becomes true
+  wait1 = false ->
+            if two_on and not (x > 0) then true
+            else if pre(wait1) and not (x > 0) then true
+            else false;
+
+  -- property holds whenever there is no pending obligation
+  ok1 = not wait1;
+
+  ----------------------------------------------------------------
+  -- ok2: After x is positive, (mode OR x=0) must hold forever
+  ----------------------------------------------------------------
+
+  -- once x has been positive, enforce the invariant forever
+  ok2 = (not seen_x_pos) or (mode or (x = 0));
+
+  ----------------------------------------------------------------
+  -- ok3: After there is no light, x is zero at some point
+  ----------------------------------------------------------------
+
+  -- only enter waiting state if mode is OFF and x is not already zero
+  -- remain waiting until x = 0 becomes true
+  wait3 = false ->
+            if (not mode) and not (x = 0) then true
+            else if pre(wait3) and not (x = 0) then true
+            else false;
+
+  -- property holds whenever there is no pending obligation
+  ok3 = not wait3;
+
+  ----------------------------------------------------------------
+  -- ok4: Additional invariant
+  ----------------------------------------------------------------
+
+  -- while the light is OFF, x must be zero
+  ok4 = mode or (x = 0);
+
+  ----------------------------------------------------------------
+  -- combined result
+  ----------------------------------------------------------------
+
+  ok = ok1 and ok2 and ok3 and ok4;
+tel

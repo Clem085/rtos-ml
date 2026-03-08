@@ -1,0 +1,142 @@
+-- Cruise Controller with PID
+-- Types for PID
+type pid_params_t = struct { Kgain: real; Ti: real; Td: real; delT: real; setpt: real; input: real; highlim: real; lowlim: real };
+type pid_state_t = struct { proportional: real; integral: real; deriv: real; output: real };
+
+-- Helper: convert wheel rotation to natural speed
+node measureSpeed(event_rotate: real) returns (nat_speed: real);
+let
+    nat_speed = event_rotate * (10.0 * 60.0 / 672.0);
+tel
+
+-- Helper: update cruise latch and target speed
+node setSpeed(
+    cruise_toggle: bool;
+    event_increment: bool;
+    event_decrement: bool;
+    nat_speed: real;
+    prev_state: bool
+) returns (event_cruise: bool; cruise_speed: real);
+let
+    -- Cruise latch is toggled on demand
+    event_cruise =
+        false ->
+        if cruise_toggle then not pre(prev_state)
+        else pre(prev_state);
+
+    -- Cruise target initializes when entering cruise
+    cruise_speed =
+        0.0 ->
+        if event_cruise and not pre(prev_state) then nat_speed
+        else if event_cruise and event_increment then pre(cruise_speed) + 1.0
+        else if event_cruise and event_decrement then pre(cruise_speed) - 1.0
+        else pre(cruise_speed);
+tel
+
+-- PID controller
+node controlSpeed(pid_params: pid_params_t; pid_state: pid_state_t) returns (pressure_force: real; updated_pid_state: pid_state_t);
+var
+    seterr: real;
+    pidout: real;
+let
+    -- Compute error
+    seterr = pid_params.setpt - pid_params.input;
+
+    -- Proportional
+    pidout = seterr;
+    updated_pid_state.proportional = seterr;
+
+    -- Integral
+    pidout = pidout + (pid_state.integral * pid_params.delT / pid_params.Ti);
+    updated_pid_state.integral = pid_state.integral + seterr;
+
+    -- Derivative
+    pidout = pidout + (seterr - pid_state.deriv) * pid_params.Td / pid_params.delT;
+    updated_pid_state.deriv = seterr;
+
+    -- Gain
+    pidout = pidout * pid_params.Kgain;
+
+    -- Limits
+    pidout = if pidout > pid_params.highlim then pid_params.highlim else if pidout < pid_params.lowlim then pid_params.lowlim else pidout;
+
+    -- Output
+    updated_pid_state.output = pidout;
+    pressure_force = pidout;
+tel
+
+-- Helper: integrate pressure into rotation only while cruising
+node changeSpeed(prev_rotation: real; prev_force: real; cruise_state: bool) returns (event_rotate: real);
+let
+    -- Rotation evolves only when cruise is active
+    event_rotate = if cruise_state then prev_rotation + prev_force else prev_rotation;
+tel
+
+-- Cruise Controller node
+node cruisectr2(
+    event_rotate: real;
+    event_cruise: bool;
+    event_decrement: real;
+    event_increment: real
+)
+returns (
+    nat_speed: real;
+    cruise_speed: real;
+    pressure_force: real;
+    cruise_output: bool
+);
+var
+    prev_rotation: real;
+    prev_force: real;
+    updated_rotation: real;
+    updated_pressure: real;
+    cruise_output_local: bool;
+    cruise_speed_local: real;
+    pid_params: pid_params_t;
+    pid_state: pid_state_t;
+    updated_pid_state: pid_state_t;
+let
+    -- Natural speed comes directly from the current input rotation
+    nat_speed = measureSpeed(event_rotate);
+
+    -- State memories feed rotation integration
+    prev_rotation = 0.0 -> pre(updated_rotation);
+    prev_force    = 0.0 -> pre(updated_pressure);
+
+    -- Cruise latch and target update from discrete increment/decrement events
+    (cruise_output_local, cruise_speed_local) =
+        setSpeed(event_cruise,
+                 event_increment <> 0.0,
+                 event_decrement <> 0.0,
+                 nat_speed,
+                 false -> pre(cruise_output_local));
+
+    -- Expose cruise outputs
+    cruise_output = cruise_output_local;
+    cruise_speed  = cruise_speed_local;
+
+    -- PID params
+    pid_params.Kgain = 1.0;  -- example values, tune experimentally
+    pid_params.Ti = 1.0;
+    pid_params.Td = 0.1;
+    pid_params.delT = 0.1;
+    pid_params.setpt = cruise_speed;
+    pid_params.input = nat_speed;
+    pid_params.highlim = 10.0;
+    pid_params.lowlim = -10.0;
+
+    -- PID state
+    pid_state.proportional = 0.0 -> pre(updated_pid_state.proportional);
+    pid_state.integral = 0.0 -> pre(updated_pid_state.integral);
+    pid_state.deriv = 0.0 -> pre(updated_pid_state.deriv);
+    pid_state.output = 0.0 -> pre(updated_pid_state.output);
+
+    -- Pressure is computed using PID
+    (updated_pressure, updated_pid_state) = controlSpeed(pid_params, pid_state);
+
+    -- Rotation update applies only when cruise is engaged
+    updated_rotation = changeSpeed(prev_rotation, prev_force, event_cruise);
+
+    -- Expose the actuator output
+    pressure_force = updated_pressure;
+tel

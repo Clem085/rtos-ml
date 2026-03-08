@@ -1,0 +1,37 @@
+# Makefile for cruisectr2
+LUS := cruisectr2.lus
+NODE := cruisectr2
+
+OUTDIR := gen
+PREFIX := cruisectr2
+
+cruisectr2-sim: sim
+cruisectr2-exe: exe
+
+LUSBASE := $(basename $(notdir $(LUS)))
+LV6PFX := $(OUTDIR)/$(LUSBASE)_$(NODE)
+
+CAN_C := $(OUTDIR)/$(PREFIX).c
+CAN_H := $(OUTDIR)/$(PREFIX).h
+CAN_LOOP := $(OUTDIR)/$(PREFIX)_loop.c
+
+GEN := $(LV6PFX).c $(LV6PFX).h $(LV6PFX)_loop.c $(CAN_C) $(CAN_H) $(CAN_LOOP) *.ec *.oc *.sh *.exec
+
+.PHONY: exe sim genfiles clean
+
+sim: genfiles
+	luciole $(LUS) $(NODE)
+
+exe: genfiles
+
+genfiles:
+	@mkdir -p $(OUTDIR)
+	@rm -f $(OUTDIR)/*.c $(OUTDIR)/*.h
+	@cd $(OUTDIR) && lv6 -cc ../$(LUS) -n $(NODE)
+	@mv -f $(LV6PFX).c $(CAN_C)
+	@mv -f $(LV6PFX).h $(CAN_H)
+	@mv -f $(LV6PFX)_loop.c $(CAN_LOOP)
+
+clean:
+	@rm -rf $(OUTDIR)
+	@rm -f *.ec *.oc *.c *.h *.sh *.exec

@@ -1,0 +1,9 @@
+CC = gcc
+CFLAGS = -pthread -Wall -O2
+TARGET = rtsched
+
+$(TARGET): rtsched.c
+	$(CC) $(CFLAGS) -o $(TARGET) rtsched.c
+
+clean:
+	rm -f $(TARGET) gantt.dat static.png
