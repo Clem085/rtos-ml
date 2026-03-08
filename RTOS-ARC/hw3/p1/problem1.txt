@@ -1,0 +1,34 @@
+(a) Deadline monotone scheduling under the system utilization test:
+
+The priority assignment for deadline monotone is based on deadlines: T1 (deadline 7), T3 (deadline 11), T2 (deadline 12), so priority order T1 > T3 > T2.
+
+The system utilization U = C1/T1 + C2/T2 + C3/T3 = 1/7 + 5/12 + 3/9 ≈ 0.1429 + 0.4167 + 0.3333 = 0.8929
+
+For deadline monotone scheduling, the utilization bound is similar to EDF, n(2^{1/n} - 1) for n=3 ≈ 0.779
+
+Since 0.8929 > 0.779, the task set is not schedulable under deadline monotone scheduling using the system utilization test.
+
+(b) GTDA with priority assignment (T1, T3, T2):
+
+Priority order: T1 highest, T3, T2 lowest.
+
+Using response time analysis (which is part of GTDA):
+
+For T1: R1 = 1 ≤ 7
+
+For T3: R3 = 3 + ceil(R3/7)*1
+
+Assuming R3 = 4, ceil(4/7)=1, 3+1=4 ≤ 11
+
+For T2: R2 = 5 + ceil(R2/7)*1 + ceil(R2/9)*3
+
+Trying R2 = 10, ceil(10/7)=2, ceil(10/9)=2, 5+2+6=13 > 12
+
+No fixed point ≤12, so not schedulable.
+
+The task set is not schedulable under GTDA with the given priority order.
+
+(c) In-phase busy period:
+
+Since the system is not schedulable, the in-phase busy period is infinite.</content>
+<parameter name="filePath">c:\Users\consa\Downloads\Academics\NC_STATE\2025-2026\SPRING_2026\RTOS_ML\RTOS-ARC\hw3\problem1.txt

@@ -13,6 +13,12 @@
 #
 # Auto-select ARC compute node and update ssh config
 # Assumes clusters are c0–c99
+#
+# === Useful Commands ===
+# ssh arc "squeue -u $USER -h -o %N | head -n 1" # SSH Into arc, request cluster, and print cluster number
+# ssh arc "scancel -u $USER" # Exit Cluster and disconnect from SSH
+# sinfo # Check node availability and partition info
+# squeue # Shows who is holding what nodes and for how long
 
 param(
     # If provided, request an allocation suitable for the RTOS class (partition csc549).

@@ -105,7 +105,7 @@ Enter Password
 Open Terminal on Rockey Linux by clicking `Activities` > `Terminal`
 ![Open_Terminal](./images/TigerVNC-2.png)
 
-# Install Python Despendencies
+# Install Python Dependencies
 Command:
 ```
 export UE4_ROOT=~fmuelle/carla-9.14/UnrealEngine_4.26/

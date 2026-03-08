@@ -1,0 +1,14 @@
+# HW3 Problem 4: Cruise Control with PID
+
+This implements a PID controller for cruise control in Lustre.
+
+## Build
+make -f Makefile3 cruisectr2-exe
+
+## Simulation
+make -f Makefile3 cruisectr2-sim
+
+## PID Tuning
+The PID parameters are set to example values. Tune Kgain, Ti, Td experimentally for better performance.
+
+Compare with old controller by running simulations and observing outputs.

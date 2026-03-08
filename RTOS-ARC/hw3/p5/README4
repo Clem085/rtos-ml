@@ -1,0 +1,15 @@
+# HW3 Problem 5: CARLA PID Agent
+
+Custom MyPID agent with tuned PID parameters for fast driving.
+
+Start location: x=-45.235935, y=-36.500095, z=0.600000
+
+Destination: x=67.659737, y=69.835068, z=0.000000
+
+Race results: [To be filled after runs]
+
+Total time: X seconds
+
+Invasions: Y
+
+Collisions: Z
